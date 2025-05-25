@@ -18,7 +18,7 @@ public class ConexionBD {
     // Declaración de constantes para la conexión
 
     private static final String MAQUINA = "localhost";
-    private static final String BD = "CreacionBD";
+    private static final String BD = "VeteriApp";
     private static final String USUARIO = "root";
     private static final String PASSWORD = "1234";
 

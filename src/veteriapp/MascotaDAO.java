@@ -1,23 +1,24 @@
 /**
  * Clase DAO para acceder a los datos de la tabla Mascota.
  * Gestiona operaciones CRUD desde Java hacia MySQL.
- * 
+ *
  * @author Juan Manuel
- * @version 1.0
- * @since 2025-05-24
+ * @version 2.0
+ * @since 2025-05-25
  */
 
 package veteriapp;
 
 import java.sql.*;
+import java.time.LocalDate; // Importar LocalDate
 import java.util.ArrayList;
 import java.util.List;
 
 public class MascotaDAO {
-	
-	// Declaración de variables
+
+    // Declaración de variables
     private final Connection conexion;
-    
+
     /**
      * Constructor que establece la conexión con la base de datos
      */
@@ -27,7 +28,7 @@ public class MascotaDAO {
 
     /**
      * Método para obtener todas las mascotas registradas en la base de datos
-     * 
+     *
      * @return Lista con objetos de tipo Mascota
      */
     public List<Mascota> obtenerTodasLasMascotas() {
@@ -36,63 +37,167 @@ public class MascotaDAO {
 
         try (Statement stmt = conexion.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            
+
             while (rs.next()) {
+                // Recuperar la fecha de fallecimiento, puede ser null
+                Date fechaFallecimientoSql = rs.getDate("fechaFallecimiento");
+                LocalDate fechaFallecimiento = (fechaFallecimientoSql != null) ? fechaFallecimientoSql.toLocalDate() : null;
+
+                // Recuperar notasMemorial (puede ser null)
+                String notasMemorial = rs.getString("notasMemorial");
+
                 Mascota mascota = new Mascota(
                     rs.getInt("idMascota"),
                     rs.getString("nombre"),
                     rs.getString("especie"),
                     rs.getString("raza"),
-                    rs.getDate("fechaNacimiento") != null ? rs.getDate("fechaNacimiento").toLocalDate() : null,
+                    rs.getDate("fechaNacimiento").toLocalDate(),
                     rs.getDouble("peso"),
-                    EstadoMascota.valueOf(rs.getString("estado").toUpperCase()),
-                    rs.getDate("fechaFallecimiento") != null ? rs.getDate("fechaFallecimiento").toLocalDate() : null,
-                    rs.getString("dniDueno")
+                    EstadoMascota.valueOf(rs.getString("estado").toUpperCase()), // Convertir String a Enum
+                    fechaFallecimiento,
+                    rs.getString("dniDueno"),
+                    notasMemorial // Incluir el nuevo campo
                 );
                 lista.add(mascota);
             }
-
         } catch (SQLException e) {
-            System.out.println("Error al obtener mascotas: " + e.getMessage());
+            System.out.println("❌ Error al obtener todas las mascotas: " + e.getMessage());
         }
-
         return lista;
     }
 
     /**
-     * Método para insertar una nueva mascota en la base de datos
-     * 
-     * @param m Objeto de tipo Mascota que se desea insertar
+     * Método para obtener una mascota por su ID.
+     *
+     * @param idMascota El ID de la mascota a buscar.
+     * @return El objeto Mascota si se encuentra, o null si no existe.
      */
-    public void insertarMascota(Mascota m) {
-        String sql = "INSERT INTO Mascota (nombre, especie, raza, fechaNacimiento, peso, estado, fechaFallecimiento, dniDueno) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
-            stmt.setString(1, m.getNombre());
-            stmt.setString(2, m.getEspecie());
-            stmt.setString(3, m.getRaza());
-            stmt.setDate(4, m.getFechaNacimiento() != null ? Date.valueOf(m.getFechaNacimiento()) : null);
-            stmt.setDouble(5, m.getPeso());
-            stmt.setString(6, m.getEstado().name().toLowerCase());
-            stmt.setDate(7, m.getFechaFallecimiento() != null ? Date.valueOf(m.getFechaFallecimiento()) : null);
-            stmt.setString(8, m.getDniDueno());
-            stmt.executeUpdate();
-            System.out.println("✅ Mascota insertada con éxito.");
-        } catch (SQLException e) {
-            System.out.println("❌ Error insertando mascota: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Método para eliminar una mascota a partir de su ID
-     * 
-     * @param idMascota ID de la mascota que se desea eliminar
-     */
-    public void eliminarMascota(int idMascota) {
-        String sql = "DELETE FROM Mascota WHERE idMascota = ?";
+    public Mascota obtenerMascotaPorId(int idMascota) {
+        Mascota mascota = null;
+        String sql = "SELECT * FROM Mascota WHERE idMascota = ?";
 
         try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
             stmt.setInt(1, idMascota);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    // Recuperar la fecha de fallecimiento, puede ser null
+                    Date fechaFallecimientoSql = rs.getDate("fechaFallecimiento");
+                    LocalDate fechaFallecimiento = (fechaFallecimientoSql != null) ? fechaFallecimientoSql.toLocalDate() : null;
+
+                    // Recuperar notasMemorial (puede ser null)
+                    String notasMemorial = rs.getString("notasMemorial");
+
+                    mascota = new Mascota(
+                        rs.getInt("idMascota"),
+                        rs.getString("nombre"),
+                        rs.getString("especie"),
+                        rs.getString("raza"),
+                        rs.getDate("fechaNacimiento").toLocalDate(),
+                        rs.getDouble("peso"),
+                        EstadoMascota.valueOf(rs.getString("estado").toUpperCase()),
+                        fechaFallecimiento,
+                        rs.getString("dniDueno"),
+                        notasMemorial // Incluir el nuevo campo
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Error al obtener mascota por ID: " + e.getMessage());
+        }
+        return mascota;
+    }
+
+
+    /**
+     * Método para insertar una nueva mascota en la base de datos
+     *
+     * @param mascota Objeto Mascota a insertar
+     * @return Número de filas afectadas
+     */
+    public int insertarMascota(Mascota mascota) {
+        String sql = """
+            INSERT INTO Mascota (nombre, especie, raza, fechaNacimiento, peso, estado, fechaFallecimiento, dniDueno, notasMemorial)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+
+        int filas = 0;
+
+        try (PreparedStatement sentencia = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            sentencia.setString(1, mascota.getNombre());
+            sentencia.setString(2, mascota.getEspecie());
+            sentencia.setString(3, mascota.getRaza());
+            sentencia.setDate(4, Date.valueOf(mascota.getFechaNacimiento()));
+            sentencia.setDouble(5, mascota.getPeso());
+            sentencia.setString(6, mascota.getEstado().name().toLowerCase());
+            // Para fechaFallecimiento y notasMemorial, pueden ser null
+            sentencia.setDate(7, mascota.getFechaFallecimiento() != null ? Date.valueOf(mascota.getFechaFallecimiento()) : null);
+            sentencia.setString(8, mascota.getDniDueno());
+            sentencia.setString(9, mascota.getNotasMemorial()); // Nuevo campo
+
+            filas = sentencia.executeUpdate();
+            if (filas > 0) {
+                try (ResultSet rs = sentencia.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        mascota.setIdMascota(rs.getInt(1)); // Asignar el ID generado
+                    }
+                }
+                System.out.println("✅ Mascota '" + mascota.getNombre() + "' añadida con ID " + mascota.getIdMascota() + ".");
+            } else {
+                System.out.println("⚠ No se pudo añadir la mascota.");
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Error al añadir mascota: " + e.getMessage());
+        }
+        return filas;
+    }
+
+
+    /**
+     * Método para modificar una mascota existente
+     *
+     * @param mascota Objeto Mascota con los nuevos datos
+     * @return Número de filas afectadas
+     */
+    public int modificarMascota(Mascota mascota) {
+        String sql = """
+            UPDATE Mascota
+            SET nombre = ?, especie = ?, raza = ?, fechaNacimiento = ?, peso = ?, estado = ?, fechaFallecimiento = ?, dniDueno = ?, notasMemorial = ?
+            WHERE idMascota = ?
+        """;
+
+        int filas = 0;
+
+        try (PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+            sentencia.setString(1, mascota.getNombre());
+            sentencia.setString(2, mascota.getEspecie());
+            sentencia.setString(3, mascota.getRaza());
+            sentencia.setDate(4, mascota.getFechaNacimiento() != null ? Date.valueOf(mascota.getFechaNacimiento()) : null);
+            sentencia.setDouble(5, mascota.getPeso());
+            sentencia.setString(6, mascota.getEstado().name().toLowerCase());
+            sentencia.setDate(7, mascota.getFechaFallecimiento() != null ? Date.valueOf(mascota.getFechaFallecimiento()) : null);
+            sentencia.setString(8, mascota.getDniDueno());
+            sentencia.setString(9, mascota.getNotasMemorial()); // Nuevo campo
+            sentencia.setInt(10, mascota.getIdMascota());
+
+            filas = sentencia.executeUpdate();
+            System.out.println(filas > 0 ? "✅ Mascota modificada." : "⚠ No se encontró la mascota.");
+        } catch (SQLException e) {
+            System.out.println("❌ Error al modificar mascota: " + e.getMessage());
+        }
+        return filas;
+    }
+
+
+    /**
+     * Método para eliminar una mascota por su ID
+     *
+     * @param id ID de la mascota a eliminar
+     */
+    public void eliminarMascota(int id) {
+        String sql = "DELETE FROM Mascota WHERE idMascota = ?";
+
+        try (PreparedStatement stmt = conexion.prepareStatement(sql)) {
+            stmt.setInt(1, id);
             int filas = stmt.executeUpdate();
             System.out.println(filas > 0 ? "✅ Mascota eliminada." : "⚠ No se encontró la mascota.");
         } catch (SQLException e) {
