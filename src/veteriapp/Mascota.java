@@ -1,17 +1,22 @@
+/**
+ * Clase que representa una mascota en la clínica veterinaria.
+ * Se asocia con un dueño y puede tener múltiples citas o tratamientos.
+ * 
+ * @author Juan Manuel
+ * @version 1.0
+ * @since 2025-05-24
+ */
+
 package veteriapp;
 
 import java.time.LocalDate;
 
-/**
- * Enumeraciones de estado para mascota y cita
- */
 enum EstadoMascota { ACTIVA, FALLECIDA }
-enum EstadoCita { PENDIENTE, REALIZADA, CANCELADA }
 
-/**
- * Clase Mascota
- */
-class Mascota {
+public class Mascota {
+
+    // Declaración de variables
+
     private int idMascota;
     private String nombre;
     private String especie;
@@ -22,7 +27,22 @@ class Mascota {
     private LocalDate fechaFallecimiento;
     private String dniDueno;
 
-    public Mascota(int idMascota, String nombre, String especie, String raza, LocalDate fechaNacimiento, double peso, EstadoMascota estado, LocalDate fechaFallecimiento, String dniDueno) {
+    /**
+     * Constructor de Mascota
+     * 
+     * @param idMascota         Id de la mascota
+     * @param nombre            Nombre de la mascota
+     * @param especie           Especie (perro, gato, etc.)
+     * @param raza              Raza de la mascota
+     * @param fechaNacimiento   Fecha de nacimiento
+     * @param peso              Peso en kilogramos
+     * @param estado            Estado de la mascota (activa/fallecida)
+     * @param fechaFallecimiento Fecha de fallecimiento si aplica
+     * @param dniDueno          DNI del dueño de la mascota
+     */
+    public Mascota(int idMascota, String nombre, String especie, String raza,
+                   LocalDate fechaNacimiento, double peso, EstadoMascota estado,
+                   LocalDate fechaFallecimiento, String dniDueno) {
         this.idMascota = idMascota;
         this.nombre = nombre;
         this.especie = especie;
@@ -33,8 +53,8 @@ class Mascota {
         this.fechaFallecimiento = fechaFallecimiento;
         this.dniDueno = dniDueno;
     }
-
-
+    
+    //Getters y Setters
 
     public int getIdMascota() {
 		return idMascota;

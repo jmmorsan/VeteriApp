@@ -1,9 +1,18 @@
+/**
+ * Clase que representa al dueño de una o más mascotas.
+ * Se utiliza para asociar cada mascota con su propietario responsable.
+ * 
+ * @author Juan Manuel
+ * @version 1.0
+ * @since 2025-05-24
+ */
+
 package veteriapp;
 
-/**
- * Clase Dueno
- */
-class Dueno {
+public class Dueno {
+    
+    // Declaración de variables
+
     private String dniDueno;
     private String nombre;
     private String apellidos;
@@ -11,7 +20,18 @@ class Dueno {
     private String email;
     private String direccion;
 
-    public Dueno(String dniDueno, String nombre, String apellidos, String telefono, String email, String direccion) {
+    /**
+     * Constructor de Dueno
+     * 
+     * @param dniDueno   DNI del dueño
+     * @param nombre     Nombre del dueño
+     * @param apellidos  Apellidos del dueño
+     * @param telefono   Número de teléfono
+     * @param email      Correo electrónico
+     * @param direccion  Dirección postal
+     */
+    public Dueno(String dniDueno, String nombre, String apellidos,
+                 String telefono, String email, String direccion) {
         this.dniDueno = dniDueno;
         this.nombre = nombre;
         this.apellidos = apellidos;
@@ -20,7 +40,8 @@ class Dueno {
         this.direccion = direccion;
     }
     
-    
+    //Getters y Setters
+
 
     public String getDniDueno() {
 		return dniDueno;
