@@ -25,6 +25,10 @@ public class TratamientoDAO {
     public TratamientoDAO() {
         conexion = ConexionBD.getConexion();
     }
+    
+    public TratamientoDAO(Connection conexion) {
+        this.conexion = conexion;
+    }
 
     /**
      * Método para obtener todos los tratamientos registrados

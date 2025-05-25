@@ -17,6 +17,10 @@ public class DuenoDAO {
 
     // Declaración de variables
     private final Connection conexion;
+    
+    public DuenoDAO(Connection conexion) { // <-- CAMBIO AQUÍ: Constructor con Connection
+        this.conexion = conexion;
+    }
 
     /**
      * Constructor que establece la conexión con la base de datos

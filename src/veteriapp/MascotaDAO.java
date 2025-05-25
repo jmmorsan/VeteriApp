@@ -10,7 +10,7 @@
 package veteriapp;
 
 import java.sql.*;
-import java.time.LocalDate; // Importar LocalDate
+import java.time.LocalDate; 
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +18,11 @@ public class MascotaDAO {
 
     // Declaración de variables
     private final Connection conexion;
+    
+    public MascotaDAO(Connection conexion) { // <-- CAMBIO AQUÍ: Constructor con Connection
+        this.conexion = conexion;
+    }
+
 
     /**
      * Constructor que establece la conexión con la base de datos
