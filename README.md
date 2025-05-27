@@ -37,7 +37,3 @@ Veterinarios con más citas asignadas.
 Número de citas por especie o raza.
 
 Listado de tratamientos por tipo.
-
---AUN POR VERSE ESTA OPCION --
-
--Control de acceso: Usuarios con distintos roles (por implementar si se desea): admin, recepcionista, veterinario.
