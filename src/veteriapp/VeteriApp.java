@@ -7,7 +7,7 @@
  * Esta clase actúa como la interfaz de usuario principal para la gestión de la clínica.
  *
  * @author Juan Manuel
- * @version 2.0
+ * @version 3.0
  * @since 2025-05-25
  */
 package veteriapp;
@@ -91,6 +91,7 @@ public class VeteriApp {
         System.out.println("2. Añadir mascota");
         System.out.println("3. Modificar mascota");
         System.out.println("4. Eliminar mascota");
+        System.out.println("5. Buscar mascota por ID");
         System.out.print("Opción: ");
         int op;
         try {
@@ -262,6 +263,27 @@ public class VeteriApp {
                 }
                 dao.eliminarMascota(id);
             }
+            case 5 -> {
+                System.out.println("\n--- Buscar Mascota por ID ---");
+                System.out.print("ID de la mascota: ");
+                int id;
+                try {
+                    id = scanner.nextInt();
+                    scanner.nextLine();
+                } catch (InputMismatchException e) {
+                    System.out.println("Entrada no válida. Introduce un número.");
+                    scanner.nextLine();
+                    return;
+                }
+
+                Mascota mascota = dao.obtenerMascotaPorId(id);
+                if (mascota != null) {
+                    System.out.println("Mascota encontrada:");
+                    System.out.println(mascota);
+                } else {
+                    System.out.println("No se encontró ninguna mascota con ese ID.");
+                }
+            }
             default -> System.out.println("Opción no válida.");
         }
     }
@@ -282,6 +304,7 @@ public class VeteriApp {
         System.out.println("2. Añadir dueño");
         System.out.println("3. Modificar dueño");
         System.out.println("4. Eliminar dueño");
+        System.out.println("5. Buscar dueño por DNI");       
         System.out.print("Opción: ");
         int op;
         try {
@@ -355,6 +378,20 @@ public class VeteriApp {
                 String dni = scanner.nextLine();
                 dao.eliminarDueno(dni);
             }
+            case 5 -> {
+                System.out.println("\n--- Buscar Dueño por DNI ---");
+                System.out.print("DNI del dueño: ");
+                String dni = scanner.nextLine();
+
+                Dueno dueno = dao.obtenerDuenoPorDni(dni);
+                if (dueno != null) {
+                    System.out.println("Dueño encontrado:");
+                    System.out.println(dueno);
+                } else {
+                    System.out.println("No se encontró ningún dueño con ese DNI.");
+                }
+            }
+
             default -> System.out.println("Opción no válida.");
         }
     }
@@ -375,6 +412,7 @@ public class VeteriApp {
         System.out.println("2. Añadir veterinario");
         System.out.println("3. Modificar veterinario");
         System.out.println("4. Eliminar veterinario");
+        System.out.println("5. Veterinarios con más citas asignadas");
         System.out.print("Opción: ");
         int op;
         try {
@@ -431,6 +469,12 @@ public class VeteriApp {
                 String dni = scanner.nextLine();
                 dao.eliminarVeterinario(dni);
             }
+            case 5 -> {
+                System.out.println("\n--- Veterinarios con más Citas ---");
+                List<String> ranking = dao.obtenerVeterinariosConCitasAsignadas();
+                ranking.forEach(System.out::println);
+            }
+
             default -> System.out.println("Opción no válida.");
         }
     }
@@ -451,6 +495,7 @@ public class VeteriApp {
         System.out.println("2. Añadir cita");
         System.out.println("3. Modificar cita");
         System.out.println("4. Eliminar cita");
+        System.out.println("5. Registrar cita con varios veterinarios");
         System.out.print("Opción: ");
         int op;
         try {
@@ -562,6 +607,30 @@ public class VeteriApp {
                 }
                 dao.eliminarCita(id);
             }
+            case 5 -> {
+                System.out.println("\n--- Registrar Cita con Varios Veterinarios ---");
+
+                try {
+                    System.out.print("Fecha y hora (YYYY-MM-DDTHH:MM): ");
+                    LocalDateTime fechaHora = LocalDateTime.parse(scanner.nextLine());
+
+                    System.out.print("Motivo: ");
+                    String motivo = scanner.nextLine();
+
+                    System.out.print("ID de mascota: ");
+                    int idMascota = scanner.nextInt();
+                    scanner.nextLine();
+
+                    System.out.print("DNIs de veterinarios separados por coma (ej: 12345678A,23456789B): ");
+                    String dnis = scanner.nextLine();
+
+                    dao.registrarCitaConVeterinarios(fechaHora, motivo, idMascota, dnis);
+
+                } catch (Exception e) {
+                    System.out.println("⚠ Error en los datos introducidos. Revisa el formato.");
+                    scanner.nextLine();
+                }
+            }
             default -> System.out.println("Opción no válida.");
         }
     }
@@ -582,6 +651,7 @@ public class VeteriApp {
         System.out.println("2. Añadir tratamiento");
         System.out.println("3. Modificar tratamiento");
         System.out.println("4. Eliminar tratamiento");
+        System.out.println("5. Ver tratamientos por período");
         System.out.print("Opción: ");
         int op;
         try {
@@ -680,6 +750,27 @@ public class VeteriApp {
                     return;
                 }
                 dao.eliminarTratamiento(id);
+            }
+            case 5 -> {
+                System.out.println("\n--- Tratamientos por Período ---");
+                try {
+                    System.out.print("ID de la mascota: ");
+                    int idMascota = scanner.nextInt();
+                    scanner.nextLine();
+
+                    System.out.print("Fecha de inicio (YYYY-MM-DD): ");
+                    LocalDate inicio = LocalDate.parse(scanner.nextLine());
+
+                    System.out.print("Fecha de fin (YYYY-MM-DD): ");
+                    LocalDate fin = LocalDate.parse(scanner.nextLine());
+
+                    List<String> tratamientos = dao.obtenerTratamientosDeMascotaPorPeriodo(idMascota, inicio, fin);
+                    tratamientos.forEach(System.out::println);
+
+                } catch (Exception e) {
+                    System.out.println("⚠ Error en la entrada. Verifica los datos y formato de fecha.");
+                    scanner.nextLine();
+                }
             }
             default -> System.out.println("Opción no válida.");
         }
