@@ -1,0 +1,37 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Tema Principal: Configuración de colores maestros -->
+    <style name="Theme.VeteriApp" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- SplashScreen API -->
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">#FFFFFF</item>
+
+        <!-- Colores Primarios (VERDE CORPORATIVO) -->
+        <item name="colorPrimary">#4CAF50</item>
+        <item name="colorPrimaryVariant">#388E3C</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Forzamos que el color primario de superficie sea el verde para evitar azules residuales -->
+        <item name="colorSecondary">#4CAF50</item>
+        <item name="colorSecondaryVariant">#388E3C</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- UI Colors: Configuración de barras del sistema -->
+        <item name="android:statusBarColor">#4CAF50</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">@color/verde_fondo</item>
+
+        <!-- Superficies -->
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/black</item>
+
+        <!-- IMPORTANTE: Habilitamos el dibujo detrás de barras pero con color controlado -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <!-- Tema sin ActionBar para actividades secundarias -->
+    <style name="Theme.VeteriApp.NoActionBar" parent="Theme.VeteriApp">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>

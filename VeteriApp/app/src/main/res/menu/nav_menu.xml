@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_inicio"
+            android:icon="@android:drawable/ic_menu_compass"
+            android:title="Inicio" />
+        <!-- Opciones Dueño -->
+        <item
+            android:id="@+id/nav_mis_mascotas"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="Mis Mascotas" />
+        <item
+            android:id="@+id/nav_pedir_cita"
+            android:icon="@android:drawable/ic_menu_my_calendar"
+            android:title="Pedir Cita" />
+
+        <!-- Opciones Veterinario -->
+        <item
+            android:id="@+id/nav_gestionar_citas"
+            android:icon="@android:drawable/ic_menu_today"
+            android:title="Gestionar Citas" />
+        <item
+            android:id="@+id/nav_revisar_pacientes"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="Revisar Pacientes" />
+        <item
+            android:id="@+id/nav_publicar_noticia"
+            android:icon="@android:drawable/ic_menu_edit"
+            android:title="Publicar Noticia" />
+
+        <!-- Opciones Admin -->
+        <item
+            android:id="@+id/nav_gestion_roles"
+            android:icon="@android:drawable/ic_menu_agenda"
+            android:title="Gestión de Roles" />
+        <item
+            android:id="@+id/nav_limpieza_datos"
+            android:icon="@android:drawable/ic_menu_delete"
+            android:title="Limpieza de Datos" />
+
+        <item
+            android:id="@+id/nav_memorial"
+            android:icon="@android:drawable/btn_star_big_on"
+            android:title="Memorial Eterno" />
+    </group>
+
+    <item android:title="Opciones">
+        <menu>
+            <item
+                android:id="@+id/nav_ajustes"
+                android:icon="@android:drawable/ic_menu_preferences"
+                android:title="Ajustes de Sonido" />
+            <item
+                android:id="@+id/nav_cerrar_sesion"
+                android:icon="@android:drawable/ic_menu_close_clear_cancel"
+                android:title="Cerrar Sesión" />
+        </menu>
+    </item>
+</menu>

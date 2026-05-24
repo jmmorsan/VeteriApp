@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores corporativos -->
+    <color name="verde_principal">#4CAF50</color>
+    <color name="verde_oscuro">#1B5E20</color>
+    <color name="verde_claro">#C8E6C9</color>
+    <color name="verde_fondo">#E8F5E9</color>
+
+    <!-- Memorial Colors (Alegres) -->
+    <color name="memorial_bg">#FFFDE7</color>
+    <color name="memorial_button">#FFD54F</color>
+    <color name="memorial_button_variant">#FFA000</color>
+
+    <!-- Colores estándar -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="grey_dark">#212121</color>
+    <color name="surface_dark">#121212</color>
+    <color name="card_dark">#1E1E1E</color>
+</resources>
