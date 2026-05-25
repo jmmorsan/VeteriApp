@@ -3,6 +3,7 @@ package com.example.veteriapp.main;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -46,46 +47,34 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * Clase UsuarioActivity.
  * 
  * Dashboard Principal del Usuario con rol Dueño.
- * Gestiona el muro de noticias, curiosidades animales mediante IA local,
- * y acceso a la gestión de mascotas, citas y memorial.
+ * Implementa SnapshotListeners blindados para notificaciones en tiempo real.
  * 
  * @author Juan Manuel Moreno Sánchez
- * @version 1.0 VeteriApp Release
+ * @version 1.0.5 Parche Robustez Notificaciones
  */
 public class UsuarioActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
-	// --- VARIABLES DE LA INTERFAZ ---
     private DrawerLayout drawerLayout;
     private TextView tvAnimalFact;
     private LinearLayout contenedorNoticias;
-
-    // --- INSTANCIAS DE FIREBASE ---
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
 
-    /**
-     * Método principal de creación de la actividad.
-     * Inicializa componentes, configuración estética y escuchadores de datos.
-     * 
-     * @param savedInstanceState Estado previo de la instancia.
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // --- CONFIGURACIÓN ESTÉTICA DE BARRAS DE SISTEMA ---
+        // Configuración Estética
         getWindow().setStatusBarColor(Color.parseColor("#4CAF50"));
         getWindow().setNavigationBarColor(Color.WHITE);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
 
         setContentView(R.layout.activity_usuario);
 
-        // --- INICIALIZACIÓN DE SERVICIOS ---
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         SoundManager.init(this);
 
-        // --- CONFIGURACIÓN DE TOOLBAR Y NAVEGACIÓN ---
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -94,7 +83,7 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        // --- FILTRADO DE MENÚ POR ROL (SEGURIDAD VISUAL) ---
+        // Filtrado de Menú
         Menu menu = navigationView.getMenu();
         if (menu.findItem(R.id.nav_gestionar_citas) != null) menu.findItem(R.id.nav_gestionar_citas).setVisible(false);
         if (menu.findItem(R.id.nav_revisar_pacientes) != null) menu.findItem(R.id.nav_revisar_pacientes).setVisible(false);
@@ -106,42 +95,52 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // --- VINCULACIÓN DE COMPONENTES DE VISTA ---
         tvAnimalFact = findViewById(R.id.tvAnimalFact);
         contenedorNoticias = findViewById(R.id.contenedorNoticias);
 
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             actualizarHeaderYBienvenida(navigationView, user);
+            setupNotificationListeners(user.getUid());
         }
 
-        // --- CARGA DE CONTENIDO DINÁMICO ---
         cargarDatoCurioso();
         cargarMuroNoticias();
 
-        // --- EVENTOS DE BOTONES ---
         findViewById(R.id.btnNotificaciones).setOnClickListener(v -> startActivity(new Intent(this, NotificacionesActivity.class)));
         findViewById(R.id.fabChat).setOnClickListener(v -> startActivity(new Intent(this, ChatActivity.class)));
-        
-        // --- GESTIÓN DE NOTIFICACIONES NO LEÍDAS (PUNTO ROJO) ---
-        View puntoRojo = findViewById(R.id.puntoRojoNotif);
-        if (user != null && puntoRojo != null) {
-            db.collection("notificaciones")
-                    .whereEqualTo("uidDestinatario", user.getUid())
-                    .whereEqualTo("leida", false)
-                    .addSnapshotListener((value, error) -> {
-                        if (error != null) return;
-                        puntoRojo.setVisibility((value != null && !value.isEmpty()) ? View.VISIBLE : View.GONE);
-                    });
-        }
     }
 
-    /**
-     * Sincroniza la información del usuario en el encabezado del menú y bienvenida.
-     * 
-     * @param nav  Referencia a la NavigationView.
-     * @param user Usuario autenticado en Firebase.
-     */
+    private void setupNotificationListeners(String uid) {
+        View puntoRojoBell = findViewById(R.id.puntoRojoNotif);
+        View puntoRojoChat = findViewById(R.id.puntoRojoChatFab);
+
+        db.collection("notificaciones")
+                .whereEqualTo("uidDestinatario", uid)
+                .whereEqualTo("leida", false)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Log.e("VeteriApp", "Error Listener Notif Usuario", error);
+                        return;
+                    }
+                    
+                    if (value != null) {
+                        boolean hayNotificaciones = !value.isEmpty();
+                        boolean hayChat = false;
+                        
+                        for (QueryDocumentSnapshot doc : value) {
+                            String msg = doc.getString("mensaje");
+                            if (msg != null && msg.contains("Chat")) hayChat = true;
+                        }
+
+                        if (puntoRojoBell != null) puntoRojoBell.setVisibility(hayNotificaciones ? View.VISIBLE : View.GONE);
+                        if (puntoRojoChat != null) puntoRojoChat.setVisibility(hayChat ? View.VISIBLE : View.GONE);
+                        
+                        Log.d("VeteriApp", "Notif Usuario - Bell: " + hayNotificaciones + " | Chat: " + hayChat);
+                    }
+                });
+    }
+
     private void actualizarHeaderYBienvenida(NavigationView nav, FirebaseUser user) {
         View headerView = nav.getHeaderView(0);
         TextView tvHeaderNombre = headerView.findViewById(R.id.tvHeaderNombre);
@@ -149,12 +148,9 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         ImageView ivHeaderFoto = headerView.findViewById(R.id.ivHeaderFoto);
         TextView tvBienvenida = findViewById(R.id.tvBienvenida);
 
-        // --- ASIGNACIÓN DE FOTO GENÉRICA POR ROL ---
-        if (ivHeaderFoto != null) {
-            ivHeaderFoto.setImageResource(R.drawable.usuario_foto);
-        }
-
+        if (ivHeaderFoto != null) ivHeaderFoto.setImageResource(R.drawable.usuario_foto);
         if (tvHeaderEmail != null) tvHeaderEmail.setText(user.getEmail());
+
         db.collection("users").document(user.getUid()).get().addOnSuccessListener(document -> {
             if (document.exists()) {
                 String nombre = document.getString("nombre");
@@ -164,9 +160,6 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         });
     }
 
-    /**
-     * Realiza una petición externa vía Retrofit para obtener curiosidades animales.
-     */
     private void cargarDatoCurioso() {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://dogapi.dog/api/v2/")
@@ -188,11 +181,6 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         });
     }
 
-    /**
-     * Utiliza Google ML Kit para traducir el dato curioso de inglés a español de forma local.
-     * 
-     * @param texto Cadena original en inglés.
-     */
     private void traducirYMostrar(String texto) {
         TranslatorOptions options = new TranslatorOptions.Builder()
                 .setSourceLanguage(TranslateLanguage.ENGLISH)
@@ -207,9 +195,6 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         });
     }
 
-    /**
-     * Recupera y visualiza las últimas novedades publicadas por la clínica.
-     */
     private void cargarMuroNoticias() {
         db.collection("noticias").orderBy("timestamp", Query.Direction.DESCENDING).limit(5)
                 .addSnapshotListener((value, error) -> {
@@ -221,12 +206,6 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
                 });
     }
 
-    /**
-     * Construye dinámicamente un bloque visual para una noticia.
-     * 
-     * @param titulo    Título de la novedad sanitaria.
-     * @param contenido Detalle del aviso.
-     */
     private void crearFilaNoticia(String titulo, String contenido) {
         TextView tvT = new TextView(this);
         tvT.setText(titulo);
@@ -241,12 +220,6 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         contenedorNoticias.addView(tvC);
     }
 
-    /**
-     * Gestiona las acciones al seleccionar un elemento del menú lateral.
-     * 
-     * @param item Elemento del menú seleccionado.
-     * @return true tras procesar la navegación.
-     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -264,9 +237,6 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         return true;
     }
 
-    /**
-     * Muestra un cuadro de diálogo para la configuración de sonidos y preferencias.
-     */
     private void mostrarDialogoAjustes() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Ajustes ⚙️");
@@ -283,9 +253,6 @@ public class UsuarioActivity extends AppCompatActivity implements NavigationView
         builder.show();
     }
 
-    /**
-     * Gestión del cierre del menú lateral mediante el botón físico de retroceso.
-     */
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) drawerLayout.closeDrawer(GravityCompat.START);

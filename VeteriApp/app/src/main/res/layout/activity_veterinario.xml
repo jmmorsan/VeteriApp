@@ -22,10 +22,7 @@
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="?attr/actionBarSize"
-                android:paddingTop="12dp"
-                android:paddingBottom="8dp"
+                android:layout_height="?attr/actionBarSize"
                 android:background="#FFFFFF"
                 app:contentInsetStartWithNavigation="0dp"
                 app:theme="@style/ThemeOverlay.AppCompat.Light">
@@ -166,10 +163,11 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
             android:layout_margin="24dp"
-            android:src="@drawable/ic_chat"
-            app:backgroundTint="#4CAF50"
-            app:tint="#FFFFFF"
-            app:elevation="6dp" />
+            android:src="@android:drawable/stat_notify_chat"
+            app:backgroundTint="#FFFFFF"
+            app:tint="#4CAF50"
+            app:elevation="8dp"
+            app:fabSize="normal" />
 
     </RelativeLayout>
 

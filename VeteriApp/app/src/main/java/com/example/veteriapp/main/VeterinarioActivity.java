@@ -3,6 +3,7 @@ package com.example.veteriapp.main;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -52,47 +53,36 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * Clase VeterinarioActivity.
  * 
  * Dashboard Principal del Personal Médico (Veterinario).
- * Gestiona el muro clínico de noticias, supervisa nuevas solicitudes de citas
- * y registros de pacientes, e integra curiosidades mediante IA.
+ * Implementa SnapshotListeners globales para alertas clínicas en tiempo real.
  * 
  * @author Juan Manuel Moreno Sánchez
- * @version 1.0 VeteriApp Release
+ * @version 1.0.5 Parche Robustez Notificaciones
  */
 public class VeterinarioActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
-	// --- VARIABLES DE LA INTERFAZ ---
     private DrawerLayout drawerLayout;
     private TextView tvAnimalFact;
     private LinearLayout contenedorNoticias;
-
-    // --- INSTANCIAS DE FIREBASE Y ESTADO ---
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private boolean isFirstLaunchCitas = true;
     private boolean isFirstLaunchMascotas = true;
 
-    /**
-     * Inicializa la actividad del veterinario.
-     * Configura el entorno visual inmersivo y carga los datos operativos.
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // --- CONFIGURACIÓN DE PANTALLA ADAPTATIVA ---
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE 
-                                      | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        getWindow().setStatusBarColor(Color.WHITE);
+        // Estética Corporativa
+        getWindow().setStatusBarColor(Color.parseColor("#4CAF50"));
+        getWindow().setNavigationBarColor(Color.WHITE);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
 
         setContentView(R.layout.activity_veterinario);
 
-        // --- INICIALIZACIÓN DE SERVICIOS ---
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         SoundManager.init(this);
 
-        // --- CONFIGURACIÓN DE BARRA DE HERRAMIENTAS ---
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -101,7 +91,7 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         NavigationView navigationView = findViewById(R.id.nav_view_vet);
         navigationView.setNavigationItemSelectedListener(this);
 
-        // --- FILTRADO DE MENÚ POR ROL (SEGURIDAD) ---
+        // Filtrado de Menú
         Menu menu = navigationView.getMenu();
         if (menu.findItem(R.id.nav_mis_mascotas) != null) menu.findItem(R.id.nav_mis_mascotas).setVisible(false);
         if (menu.findItem(R.id.nav_pedir_cita) != null) menu.findItem(R.id.nav_pedir_cita).setVisible(false);
@@ -112,7 +102,6 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // --- VINCULACIÓN DE VISTAS ---
         tvAnimalFact = findViewById(R.id.tvAnimalFact);
         contenedorNoticias = findViewById(R.id.contenedorNoticias);
 
@@ -121,28 +110,17 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         cargarDatoCurioso();
         cargarMuroNoticias();
 
-        // --- ACCIONES DE NAVEGACIÓN ---
         findViewById(R.id.btnNotificaciones).setOnClickListener(v -> startActivity(new Intent(this, NotificacionesActivity.class)));
         findViewById(R.id.fabChat).setOnClickListener(v -> startActivity(new Intent(this, BandejaChatActivity.class)));
     }
 
-    /**
-     * Actualiza la información del profesional en el menú lateral.
-     * 
-     * @param nav  Vista de navegación.
-     * @param user Usuario Firebase actual.
-     */
     private void actualizarHeader(NavigationView nav, FirebaseUser user) {
         View headerView = nav.getHeaderView(0);
         TextView tvNombre = headerView.findViewById(R.id.tvHeaderNombre);
         TextView tvEmail = headerView.findViewById(R.id.tvHeaderEmail);
         ImageView ivHeaderFoto = headerView.findViewById(R.id.ivHeaderFoto);
 
-        // --- ASIGNACIÓN DE FOTO GENÉRICA POR ROL ---
-        if (ivHeaderFoto != null) {
-            ivHeaderFoto.setImageResource(R.drawable.vete_foto);
-        }
-
+        if (ivHeaderFoto != null) ivHeaderFoto.setImageResource(R.drawable.vete_foto);
         if (user != null) {
             tvEmail.setText(user.getEmail());
             db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
@@ -152,31 +130,36 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
     }
 
     /**
-     * Configura escuchadores en tiempo real para alertar sobre nuevas citas o mascotas.
+     * Sincroniza las alertas destinadas a la CLINICA.
      */
     private void setupFirestoreListeners() {
-        db.collection("citas").whereEqualTo("estado", "PENDIENTE")
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) return;
-                    if (value != null && !value.isEmpty() && !isFirstLaunchCitas) {
-                        NotificationHelper.showNotification(this, "VeteriApp", "Tienes nuevas citas pendientes de revisión");
-                    }
-                    isFirstLaunchCitas = false;
-                });
+        View puntoRojo = findViewById(R.id.puntoRojoNotif);
 
-        db.collection("mascotas").whereEqualTo("estado", "PENDIENTE")
+        db.collection("notificaciones")
+                .whereEqualTo("uidDestinatario", "CLINICA")
+                .whereEqualTo("leida", false)
                 .addSnapshotListener((value, error) -> {
-                    if (error != null) return;
-                    if (value != null && !value.isEmpty() && !isFirstLaunchMascotas) {
-                        NotificationHelper.showNotification(this, "VeteriApp", "Nuevas mascotas registradas esperando validación");
+                    if (error != null) {
+                        Log.e("VeteriApp", "Error Listener Clínica", error);
+                        return;
                     }
-                    isFirstLaunchMascotas = false;
+                    
+                    if (value != null) {
+                        boolean hayNoticias = !value.isEmpty();
+                        if (puntoRojo != null) puntoRojo.setVisibility(hayNoticias ? View.VISIBLE : View.GONE);
+                        
+                        Log.d("VeteriApp", "Notif Clínica - Bell: " + hayNoticias);
+
+                        // Alerta local (Banner) si llegan nuevas mientras la App está abierta
+                        if (hayNoticias && !isFirstLaunchCitas) {
+                             NotificationHelper.showNotification(this, "VeteriApp Clínica", "Tienes nuevas solicitudes pendientes");
+                             SoundManager.playPop();
+                        }
+                        isFirstLaunchCitas = false;
+                    }
                 });
     }
 
-    /**
-     * Obtiene una curiosidad animal aleatoria mediante la Dog API.
-     */
     private void cargarDatoCurioso() {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://dogapi.dog/api/v2/")
@@ -198,11 +181,6 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         });
     }
 
-    /**
-     * Traduce localmente el contenido mediante Google ML Kit.
-     * 
-     * @param texto Texto original en inglés.
-     */
     private void traducirYMostrar(String texto) {
         TranslatorOptions options = new TranslatorOptions.Builder()
                 .setSourceLanguage(TranslateLanguage.ENGLISH)
@@ -217,9 +195,6 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         });
     }
 
-    /**
-     * Carga las últimas publicaciones del muro de noticias desde Firestore.
-     */
     private void cargarMuroNoticias() {
         db.collection("noticias").orderBy("timestamp", Query.Direction.DESCENDING).limit(5)
                 .addSnapshotListener((value, error) -> {
@@ -231,9 +206,6 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
                 });
     }
 
-    /**
-     * Crea dinámicamente un elemento visual de noticia.
-     */
     private void crearFilaNoticia(String titulo, String contenido) {
         TextView tvT = new TextView(this);
         tvT.setText(titulo);
@@ -248,9 +220,6 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         contenedorNoticias.addView(tvC);
     }
 
-    /**
-     * Procesa la selección de ítems en el menú lateral.
-     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -268,9 +237,6 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         return true;
     }
 
-    /**
-     * Muestra un cuadro de diálogo para que el profesional publique novedades.
-     */
     private void mostrarDialogoPublicarNoticia() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Publicar Noticia Global 📢");
@@ -293,9 +259,6 @@ public class VeterinarioActivity extends AppCompatActivity implements Navigation
         builder.show();
     }
 
-    /**
-     * Gestión del cierre del menú lateral.
-     */
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) drawerLayout.closeDrawer(GravityCompat.START);

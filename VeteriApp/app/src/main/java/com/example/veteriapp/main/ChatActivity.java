@@ -29,11 +29,11 @@ import java.util.Map;
  * mensajes y emisión de notificaciones de chat.
  * 
  * @author Juan Manuel Moreno Sánchez
- * @version 1.0 VeteriApp Release
+ * @version 1.0.3 Parche Conexión Maestro
  */
 public class ChatActivity extends AppCompatActivity {
 
-	// --- VARIABLES DE LA INTERFAZ ---
+    // --- VARIABLES DE LA INTERFAZ ---
     private LinearLayout contenedorMensajes;
     private ScrollView scrollViewChat;
     private EditText etMensaje;
@@ -70,12 +70,13 @@ public class ChatActivity extends AppCompatActivity {
         etMensaje = findViewById(R.id.etMensajeChat);
         btnEnviar = findViewById(R.id.btnEnviarMensaje);
 
-        // Determinación de la sala (ID único por cliente)
+        // --- PROTOCOLO DE SALA (EL CORAZÓN DEL FALLO) ---
+        // La SALA siempre debe ser el UID del Cliente para que ambos (Dueño y Vet) sintonicen la misma frecuencia.
         String uidClienteIntent = getIntent().getStringExtra("uidCliente");
         if (uidClienteIntent != null) {
-            idSalaChat = uidClienteIntent;
+            idSalaChat = uidClienteIntent; // El Veterinario entra en la sala del Cliente
         } else {
-            idSalaChat = miUid;
+            idSalaChat = miUid; // El Dueño entra en su propia sala
         }
 
         escucharMensajes();
@@ -86,6 +87,7 @@ public class ChatActivity extends AppCompatActivity {
      * Activa el SnapshotListener para monitorizar la entrada de mensajes en tiempo real.
      */
     private void escucharMensajes() {
+        // Escuchamos CUALQUIER mensaje que tenga el idSala común.
         db.collection("mensajes")
                 .whereEqualTo("idSala", idSalaChat)
                 .orderBy("timestamp", Query.Direction.ASCENDING)
@@ -94,7 +96,12 @@ public class ChatActivity extends AppCompatActivity {
                     if (value != null) {
                         contenedorMensajes.removeAllViews();
                         for (com.google.firebase.firestore.QueryDocumentSnapshot doc : value) {
-                            Mensaje m = doc.toObject(Mensaje.class);
+                            // Extraemos datos manualmente para evitar fallos de mapeo
+                            String remitente = doc.getString("uidRemitente");
+                            String texto = doc.getString("texto");
+                            Mensaje m = new Mensaje();
+                            m.setUidRemitente(remitente);
+                            m.setTexto(texto);
                             pintarBurbuja(m);
                         }
                         // Desplazamiento automático al último mensaje
@@ -110,6 +117,7 @@ public class ChatActivity extends AppCompatActivity {
         String texto = etMensaje.getText().toString().trim();
         if (texto.isEmpty()) return;
 
+        // Generación de ID secuencial para el mensaje
         db.collection("mensajes").orderBy("id_mensaje", Query.Direction.DESCENDING).limit(1).get()
                 .addOnSuccessListener(snap -> {
                     int idCalc = 1;
@@ -121,14 +129,16 @@ public class ChatActivity extends AppCompatActivity {
                     final int idFinal = idCalc;
                     Map<String, Object> data = new HashMap<>();
                     data.put("id_mensaje", idFinal);
-                    data.put("uidRemitente", miUid);
+                    data.put("uidRemitente", miUid); // Quien escribe en este momento
                     data.put("texto", texto);
-                    data.put("idSala", idSalaChat);
+                    data.put("idSala", idSalaChat); // CANAL MAESTRO: Siempre el UID del cliente
                     data.put("timestamp", com.google.firebase.Timestamp.now());
 
                     db.collection("mensajes").add(data).addOnSuccessListener(ref -> {
-                        String uidDestino = idSalaChat.equals(miUid) ? "CLINICA" : idSalaChat;
-                        emitirNotificacion(uidDestino, texto);
+                        // LÓGICA DE NOTIFICACIÓN: Si el dueño escribe, avisa a la CLINICA. Si el Vet escribe, avisa al dueño.
+                        String uidNotifDestino = idSalaChat.equals(miUid) ? "CLINICA" : idSalaChat;
+                        emitirNotificacion(uidNotifDestino, texto);
+                        
                         etMensaje.setText("");
                         scrollViewChat.post(() -> scrollViewChat.fullScroll(View.FOCUS_DOWN));
                     });
@@ -137,9 +147,6 @@ public class ChatActivity extends AppCompatActivity {
 
     /**
      * Genera una notificación asíncrona para alertar al destinatario del nuevo mensaje.
-     * 
-     * @param uidDestino Identificador del receptor o identificador global de clínica.
-     * @param texto      Cuerpo del mensaje recibido.
      */
     private void emitirNotificacion(String uidDestino, String texto) {
         db.collection("notificaciones").orderBy("id_notificacion", Query.Direction.DESCENDING).limit(1).get()
@@ -153,7 +160,7 @@ public class ChatActivity extends AppCompatActivity {
                     Map<String, Object> notif = new HashMap<>();
                     notif.put("id_notificacion", idN);
                     notif.put("uidDestinatario", uidDestino);
-                    notif.put("mensaje", "Nuevo mensaje: " + texto);
+                    notif.put("mensaje", "Chat: " + texto);
                     notif.put("leida", false);
                     notif.put("timestamp", com.google.firebase.Timestamp.now());
 
@@ -163,10 +170,10 @@ public class ChatActivity extends AppCompatActivity {
 
     /**
      * Renderiza dinámicamente un mensaje en la interfaz con alineación según el remitente.
-     * 
-     * @param m Objeto mensaje a visualizar.
      */
     private void pintarBurbuja(Mensaje m) {
+        if (m.getTexto() == null || m.getUidRemitente() == null) return;
+
         TextView tv = new TextView(this);
         tv.setText(m.getTexto());
         tv.setPadding(35, 25, 35, 25);
@@ -176,11 +183,14 @@ public class ChatActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(20, 10, 20, 10);
 
+        // LÓGICA DE ORIENTACIÓN:
+        // Si el UID del remitente coincide con el mío, soy yo (Derecha)
         if (m.getUidRemitente().equals(miUid)) {
             tv.setBackgroundResource(android.R.drawable.dialog_holo_light_frame);
             params.gravity = Gravity.END;
             tv.setTextColor(Color.BLACK);
         } else {
+            // Si el UID es diferente, es el otro (Izquierda)
             tv.setBackgroundResource(android.R.drawable.dialog_holo_dark_frame);
             params.gravity = Gravity.START;
             tv.setTextColor(Color.WHITE);

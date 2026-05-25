@@ -19,19 +19,18 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 /**
  * Clase BandejaChatActivity.
  * 
- * Interfaz de Multichat para el Veterinario.
- * Permite visualizar el listado de clientes que han iniciado una consulta,
- * mostrando alertas visuales para mensajes no leídos y proporcionando acceso
- * directo a las salas de chat individuales.
+ * Interfaz de Multichat para el Personal Clínico.
+ * Permite que cualquier Veterinario o Administrador visualice las salas de chat
+ * activas con los clientes, facilitando una gestión médica colaborativa.
  * 
  * @author Juan Manuel Moreno Sánchez
- * @version 1.0 VeteriApp Release
+ * @version 1.0.1 Patch Final
  */
 public class BandejaChatActivity extends AppCompatActivity {
 
 	// --- VARIABLES DE LA INTERFAZ ---
     private LinearLayout contenedorClientes;
-    
+
     // --- INSTANCIAS DE FIREBASE ---
     private FirebaseFirestore db;
 
@@ -64,6 +63,7 @@ public class BandejaChatActivity extends AppCompatActivity {
 
     /**
      * Recupera del servidor los perfiles de usuario que poseen el rol de Dueño.
+     * Cualquier profesional autenticado tiene acceso a este listado de consulta.
      */
     private void cargarListaClientes() {
         if (contenedorClientes == null) return;
@@ -86,6 +86,7 @@ public class BandejaChatActivity extends AppCompatActivity {
 
     /**
      * Crea un elemento visual de cliente con contador de notificaciones integrado.
+     * Acceso universal para el personal médico.
      */
     private void crearTarjetaCliente(String uid, String nombre, String email) {
         LinearLayout tarjeta = new LinearLayout(this);
@@ -118,14 +119,14 @@ public class BandejaChatActivity extends AppCompatActivity {
 
         tarjeta.addView(info);
 
-        // Indicador de mensajes pendientes (Badge)
+        // Indicador de mensajes pendientes (Badge) - Visibilidad global para la clínica
         View punto = new View(this);
         punto.setLayoutParams(new LinearLayout.LayoutParams(30, 30));
         punto.setBackgroundResource(R.drawable.bg_punto_rojo);
         punto.setVisibility(View.GONE);
         tarjeta.addView(punto);
 
-        // Escuchador de mensajes no leídos específicos
+        // Escuchador de mensajes no leídos dirigidos a la CLINICA
         db.collection("notificaciones")
                 .whereEqualTo("uidDestinatario", "CLINICA")
                 .whereEqualTo("leida", false)
@@ -138,7 +139,7 @@ public class BandejaChatActivity extends AppCompatActivity {
                     }
                 });
 
-        // Evento de apertura de sala de chat
+        // Evento de apertura de sala de chat (Cualquier médico puede entrar)
         tarjeta.setOnClickListener(v -> {
             Intent i = new Intent(BandejaChatActivity.this, ChatActivity.class);
             i.putExtra("uidCliente", uid);
