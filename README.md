@@ -81,5 +81,4 @@ com.example.veteriapp
     *   Ejecuta en un dispositivo con API 35.
 
 ---
-**Desarrollado por:** Juan Manuel Moreno Sánchez 🚀🏅🐾
-**En memoria de:** ❤️‍🩹🐾Canelo🐾❤️‍🩹
+**Desarrollado por:** Juan Manuel Moreno Sánchez 🚀🏅🐾**en memoria de:** ❤️‍🩹🐾**Canelo**🐾❤️‍🩹
